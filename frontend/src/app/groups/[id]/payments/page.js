@@ -3,18 +3,19 @@
 import { useEffect, useState, use } from "react";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { HiArrowLeft } from "react-icons/hi2";
+import {
+  HiChevronLeft,
+  HiBanknotes,
+  HiXMark,
+  HiPhone,
+} from "react-icons/hi2";
 
 const STATUS_CYCLE = ["unpaid", "paid", "contacted"];
-const STATUS_LABEL = {
-  paid:      "💰 مدفوع",
-  unpaid:    "❌ لم يدفع",
-  contacted: "📞 تواصل",
-};
-const STATUS_CLASS = {
-  paid:      "bg-blue-600 text-white",
-  unpaid:    "bg-red-500 text-white",
-  contacted: "bg-amber-500 text-white",
+
+const STATUS_CONFIG = {
+  paid:      { label: "مدفوع",   icon: HiBanknotes, cls: "bg-blue-600 text-white"   },
+  unpaid:    { label: "لم يدفع", icon: HiXMark,     cls: "bg-red-500 text-white"    },
+  contacted: { label: "تواصل",   icon: HiPhone,     cls: "bg-amber-500 text-white"  },
 };
 
 function getCurrentMonth() {
@@ -24,8 +25,7 @@ function formatMonth(monthStr) {
   if (!monthStr) return "";
   const [year, month] = monthStr.split("-");
   return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString("ar-EG", {
-    year: "numeric",
-    month: "long",
+    year: "numeric", month: "long",
   });
 }
 
@@ -97,15 +97,12 @@ export default function PaymentsPage({ params }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
-          >
-            <HiArrowLeft className="text-xl" />
+          <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+            <HiChevronLeft className="text-xl" />
           </button>
           <div>
             <h1 className="text-2xl font-black text-slate-800">إدارة المدفوعات</h1>
-            <p className="text-sm text-slate-500">{group?.name} • {formatMonth(month)}</p>
+            <p className="text-sm text-slate-400">{group?.name} • {formatMonth(month)}</p>
           </div>
         </div>
         {/* Month switcher */}
@@ -119,10 +116,16 @@ export default function PaymentsPage({ params }) {
 
       {/* Summary pills */}
       <div className="flex gap-2 text-sm font-bold mb-6 flex-wrap">
-        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">{paid} مدفوع</span>
-        <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full">{unpaid} لم يدفع</span>
+        <span className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+          <HiBanknotes className="text-blue-500" /> {paid} مدفوع
+        </span>
+        <span className="flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1 rounded-full">
+          <HiXMark className="text-red-400" /> {unpaid} لم يدفع
+        </span>
         {contacted > 0 && (
-          <span className="bg-amber-100 text-amber-600 px-3 py-1 rounded-full">{contacted} تواصل</span>
+          <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1 rounded-full">
+            <HiPhone className="text-amber-400" /> {contacted} تواصل
+          </span>
         )}
       </div>
 
@@ -131,27 +134,31 @@ export default function PaymentsPage({ params }) {
         <table className="w-full text-right">
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr>
-              <th className="px-5 py-4 text-sm font-bold text-slate-500 w-10">#</th>
+              <th className="px-5 py-4 text-sm font-bold text-slate-400 w-10">#</th>
               <th className="px-4 py-4 text-sm font-bold text-slate-500">اسم الطالب</th>
-              <th className="px-4 py-4 text-sm font-bold text-slate-500 text-center w-32">حالة الدفع</th>
+              <th className="px-4 py-4 text-sm font-bold text-slate-500 text-center w-36">حالة الدفع</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {data?.payments?.map((record, i) => (
-              <tr key={record._id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-5 py-4 text-slate-400 text-sm">{i + 1}</td>
-                <td className="px-4 py-4 text-base font-semibold text-slate-800">{record.studentName}</td>
-                <td className="px-4 py-4">
-                  <button
-                    onClick={() => toggleStatus(record._id, record.status)}
-                    disabled={saving[record._id]}
-                    className={`w-full py-2 px-3 rounded-xl font-bold text-sm transition-all duration-75 active:scale-95 disabled:opacity-60 ${STATUS_CLASS[record.status]}`}
-                  >
-                    {STATUS_LABEL[record.status]}
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {data?.payments?.map((record, i) => {
+              const cfg = STATUS_CONFIG[record.status];
+              return (
+                <tr key={record._id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-5 py-4 text-slate-300 text-sm">{i + 1}</td>
+                  <td className="px-4 py-4 text-base font-semibold text-slate-800">{record.studentName}</td>
+                  <td className="px-4 py-4">
+                    <button
+                      onClick={() => toggleStatus(record._id, record.status)}
+                      disabled={saving[record._id]}
+                      className={`w-full py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-60 ${cfg.cls}`}
+                    >
+                      <cfg.icon className="text-base" />
+                      {cfg.label}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

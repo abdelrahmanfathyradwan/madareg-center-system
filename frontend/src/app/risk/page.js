@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Link from "next/link";
-import { HiExclamationTriangle, HiArrowLeft } from "react-icons/hi2";
+import {
+  HiExclamationTriangle,
+  HiChevronLeft,
+  HiXCircle,
+  HiBanknotes,
+  HiPhone,
+  HiCheckBadge,
+} from "react-icons/hi2";
 
 export default function RiskPage() {
   const [data, setData]       = useState(null);
@@ -43,19 +50,23 @@ export default function RiskPage() {
 
   return (
     <main className="max-w-4xl mx-auto p-6 md:p-10">
+      {/* Header */}
       <div className="mb-8 flex items-center gap-3">
-        <HiExclamationTriangle className="text-3xl text-amber-500" />
+        <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center shadow-md shrink-0">
+          <HiExclamationTriangle className="text-white text-2xl" />
+        </div>
         <div>
           <h1 className="text-3xl font-black text-slate-800">متابعة الطلاب</h1>
-          <p className="text-slate-500 mt-0.5">
-            طلاب تغيبوا مرتين أو أكثر، أو لم يسددوا الاشتراك
-          </p>
+          <p className="text-slate-400 mt-0.5">طلاب تغيبوا مرتين أو أكثر، أو لم يسددوا الاشتراك</p>
         </div>
       </div>
 
       {students.length === 0 ? (
-        <div className="card text-center py-16 text-slate-400 text-lg">
-          🎉 لا يوجد طلاب يحتاجون متابعة حالياً
+        <div className="card text-center py-16">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <HiCheckBadge className="text-4xl text-blue-400" />
+          </div>
+          <p className="text-slate-500 text-lg font-semibold">لا يوجد طلاب يحتاجون متابعة حالياً</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -66,21 +77,24 @@ export default function RiskPage() {
             >
               <div>
                 <h3 className="text-xl font-bold text-slate-800">{student.name}</h3>
-                <p className="text-slate-500 text-sm mb-3">{student.groupName}</p>
+                <p className="text-slate-400 text-sm mb-3">{student.groupName}</p>
                 <div className="flex flex-wrap gap-2">
                   {student.absences >= 2 && (
-                    <span className="text-xs bg-red-100 text-red-600 px-2.5 py-1 rounded-full font-bold">
-                      🔴 غاب {student.absences} مرات
+                    <span className="flex items-center gap-1.5 text-xs bg-red-50 text-red-600 border border-red-100 px-2.5 py-1 rounded-full font-bold">
+                      <HiXCircle className="text-red-400 text-sm" />
+                      غاب {student.absences} مرات
                     </span>
                   )}
                   {student.unpaid && (
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-bold">
-                      💸 لم يسدد الاشتراك
+                    <span className="flex items-center gap-1.5 text-xs bg-amber-50 text-amber-700 border border-amber-100 px-2.5 py-1 rounded-full font-bold">
+                      <HiBanknotes className="text-amber-400 text-sm" />
+                      لم يسدد الاشتراك
                     </span>
                   )}
                   {student.contacts > 0 && (
-                    <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-bold">
-                      📞 تواصل {student.contacts} مرات
+                    <span className="flex items-center gap-1.5 text-xs bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-full font-bold">
+                      <HiPhone className="text-slate-400 text-sm" />
+                      تواصل {student.contacts} مرات
                     </span>
                   )}
                 </div>
@@ -91,7 +105,7 @@ export default function RiskPage() {
                   className="btn btn-outline shrink-0 flex items-center gap-2"
                 >
                   عرض الحلقة
-                  <HiArrowLeft className="text-base" />
+                  <HiChevronLeft className="text-base" />
                 </Link>
               )}
             </div>

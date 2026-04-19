@@ -1,41 +1,69 @@
 "use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HiHome, HiUserGroup, HiExclamationTriangle } from "react-icons/hi2";
 
 export default function Navbar() {
   const pathname = usePathname();
 
   const links = [
-    { href: "/",        label: "الرئيسية" },
-    { href: "/groups",  label: "الحلقات" },
-    { href: "/risk",    label: "متابعة الطلاب" },
+    { href: "/", label: "الرئيسية", icon: HiHome },
+    { href: "/groups", label: "الحلقات", icon: HiUserGroup },
+    { href: "/risk", label: "متابعة الطلاب", icon: HiExclamationTriangle },
   ];
 
   return (
-    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-      <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-black text-xl text-slate-800 shrink-0">
-          <Image src="/logo.jfif" alt="Logo" width={80} height={80} />
-          مـدـــ ا ـــرج
-        </Link>
+    <nav className="sticky top-0 z-[100] w-full border-b border-slate-100 bg-white/90 backdrop-blur-xl transition-all duration-300 shadow-sm">
+      <div className="mx-auto max-w-7xl px-4 sm:px-8">
+        <div className="flex h-20 items-center justify-between gap-8">
+          
+          {/* Enhanced Logo Section */}
+          <Link 
+            href="/" 
+            className="group flex items-center gap-4 transition-transform active:scale-95 shrink-0"
+          >
+            <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-100 transition-all group-hover:shadow-blue-200 group-hover:ring-blue-100">
+              <Image 
+                src="/logo.jfif" 
+                alt="مدارج" 
+                fill 
+                className="object-contain p-1 transition-transform duration-500 group-hover:scale-110"
+                priority
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+               مركز مـدارج 
+              </span>
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 mt-0.5">
+                نظام إدارة الحلقات
+              </span>
+            </div>
+          </Link>
 
-        {/* Links */}
-        <div className="flex items-center gap-1">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                pathname === link.href
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {/* Navigation Links */}
+          <div className="flex items-center gap-2">
+            {links.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`relative flex items-center gap-2.5 rounded-2xl px-5 py-2.5 text-sm font-bold transition-all duration-300 ${
+                    active
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-blue-600"
+                  }`}
+                >
+                  <Icon className={`text-xl ${active ? "scale-110" : "opacity-80"}`} />
+                  <span className="hidden lg:block">{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
         </div>
       </div>
     </nav>

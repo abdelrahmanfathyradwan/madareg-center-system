@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-cairo), system-ui, -apple-system, sans-serif;
+
+  /* Blue + Gray + White palette */
+  --color-primary:      #2563eb; /* blue-600 */
+  --color-primary-dark: #1d4ed8; /* blue-700 */
+  --color-primary-light:#eff6ff; /* blue-50  */
+  --color-primary-ring: #bfdbfe; /* blue-200 */
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-cairo), system-ui, sans-serif;
+  background: #f1f5f9; /* slate-100 */
+  color: #0f172a;
+}
+
+/* ── Cards ─────────────────────────────────────── */
+.card {
+  background: white;
+  border-radius: 0.875rem;
+  border: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+  transition: box-shadow 0.15s ease;
+}
+.card:hover { box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.08); }
+
+/* ── Status badges / buttons ────────────────────── */
+.status-present   { background: #16a34a; color: white; }   /* green-600  */
+.status-absent    { background: #dc2626; color: white; }   /* red-600    */
+.status-contacted { background: #d97706; color: white; }   /* amber-600  */
+
+/* ── Generic buttons ────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.625rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s, opacity 0.1s, transform 0.07s;
+  text-decoration: none;
+}
+.btn:active { transform: scale(0.97); }
+
+/* Primary — Blue */
+.btn-primary          { background: #2563eb; color: white; }
+.btn-primary:hover    { background: #1d4ed8; }
+
+/* Outline — Gray */
+.btn-outline {
+  background: white;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.btn-outline:hover { background: #f8fafc; }
+
+/* Danger */
+.btn-danger       { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.btn-danger:hover { background: #fecaca; }
+
+/* ── Loading spinner ────────────────────────────── */
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
 const Student = require('../models/Student');
 
@@ -7,6 +8,9 @@ const Student = require('../models/Student');
 router.post('/init', async (req, res) => {
   try {
     const { groupId, month } = req.body;
+    if (!groupId || !mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: 'Invalid or missing groupId' });
+    }
     // Default to current month if not provided
     const targetMonth = month || new Date().toISOString().slice(0, 7);
 
@@ -47,12 +51,14 @@ router.post('/init', async (req, res) => {
 
     res.json({
       month: targetMonth,
-      payments: payments.map(p => ({
-        _id: p._id,
-        studentId: p.studentId._id,
-        studentName: p.studentId.name,
-        status: p.status
-      }))
+      payments: payments
+        .filter(p => p.studentId) // Null-safe check
+        .map(p => ({
+          _id: p._id,
+          studentId: p.studentId._id,
+          studentName: p.studentId.name,
+          status: p.status
+        }))
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -62,7 +68,13 @@ router.post('/init', async (req, res) => {
 // UPDATE payment status (instant toggle)
 router.patch('/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid payment ID' });
+    }
     const { status } = req.body;
+    if (!['paid', 'unpaid', 'contacted'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
     const payment = await Payment.findByIdAndUpdate(
       req.params.id,
       { status },

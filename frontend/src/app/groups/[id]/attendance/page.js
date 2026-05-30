@@ -25,6 +25,7 @@ export default function AttendancePage({ params }) {
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState({});
+  const [error, setError]     = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -36,6 +37,7 @@ export default function AttendancePage({ params }) {
         setGroup(groupData);
         setData(attendanceData);
       } catch (err) {
+        setError(err.message || "فشل تحميل بيانات الحضور");
         console.error(err);
       } finally {
         setLoading(false);
@@ -72,6 +74,13 @@ export default function AttendancePage({ params }) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="spinner" />
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="max-w-xl mx-auto mt-20 card text-center py-10 text-red-600">
+        {error}
       </div>
     );
 

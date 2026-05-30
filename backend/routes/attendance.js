@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Session = require('../models/Session');
 const Attendance = require('../models/Attendance');
 const Student = require('../models/Student');
@@ -8,6 +9,9 @@ const Student = require('../models/Student');
 router.post('/start', async (req, res) => {
   try {
     const { groupId } = req.body;
+    if (!groupId || !mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: 'Invalid or missing groupId' });
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -49,12 +53,14 @@ router.post('/start', async (req, res) => {
 
     res.json({
       session,
-      attendance: attendance.map(a => ({
-        _id: a._id,
-        studentId: a.studentId._id,
-        studentName: a.studentId.name,
-        status: a.status
-      }))
+      attendance: attendance
+        .filter(a => a.studentId) // Null-safe check
+        .map(a => ({
+          _id: a._id,
+          studentId: a.studentId._id,
+          studentName: a.studentId.name,
+          status: a.status
+        }))
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -64,7 +70,13 @@ router.post('/start', async (req, res) => {
 // UPDATE attendance status (instant toggle)
 router.patch('/:id', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid attendance ID' });
+    }
     const { status } = req.body;
+    if (!['present', 'absent', 'contacted', 'late'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
     const attendance = await Attendance.findByIdAndUpdate(
       req.params.id,
       { status },
@@ -80,6 +92,9 @@ router.patch('/:id', async (req, res) => {
 // GET attendance history for a group (last N sessions)
 router.get('/history/:groupId', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.groupId)) {
+      return res.status(400).json({ error: 'Invalid group ID' });
+    }
     const limit = parseInt(req.query.limit) || 10;
     const sessions = await Session.find({ groupId: req.params.groupId })
       .sort({ date: -1 })

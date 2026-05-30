@@ -19,6 +19,7 @@ export default function GroupPage({ params }) {
   const router  = useRouter();
   const [group, setGroup]     = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -26,6 +27,7 @@ export default function GroupPage({ params }) {
         const data = await api.getGroup(id);
         setGroup(data);
       } catch (err) {
+        setError(err.message || "فشل تحميل بيانات الحلقة");
         console.error(err);
       } finally {
         setLoading(false);
@@ -41,10 +43,10 @@ export default function GroupPage({ params }) {
       </div>
     );
 
-  if (!group)
+  if (error || !group)
     return (
       <div className="max-w-xl mx-auto mt-20 card text-center py-10 text-red-600">
-        لم يتم العثور على الحلقة
+        {error || "لم يتم العثور على الحلقة"}
       </div>
     );
 
@@ -85,10 +87,10 @@ export default function GroupPage({ params }) {
       </div>
 
       {/* Action cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <Link href={`/groups/${id}/attendance`}>
-          <div className="card flex flex-col items-center text-center py-10 gap-4 border-2 border-transparent hover:border-blue-200 hover:shadow-md cursor-pointer transition-all">
-            <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center shadow-md">
+          <div className="card flex flex-col items-center text-center py-10 gap-4 border-2 border-transparent hover:border-blue-200 hover:shadow-md cursor-pointer transition-all h-full justify-between">
+            <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center shadow-md shrink-0">
               <HiClipboardDocumentList className="text-3xl text-white" />
             </div>
             <div>
@@ -99,13 +101,25 @@ export default function GroupPage({ params }) {
         </Link>
 
         <Link href={`/groups/${id}/payments`}>
-          <div className="card flex flex-col items-center text-center py-10 gap-4 border-2 border-transparent hover:border-slate-200 hover:shadow-md cursor-pointer transition-all">
-            <div className="w-16 h-16 rounded-2xl bg-slate-700 flex items-center justify-center shadow-md">
+          <div className="card flex flex-col items-center text-center py-10 gap-4 border-2 border-transparent hover:border-slate-200 hover:shadow-md cursor-pointer transition-all h-full justify-between">
+            <div className="w-16 h-16 rounded-2xl bg-slate-700 flex items-center justify-center shadow-md shrink-0">
               <HiBanknotes className="text-3xl text-white" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-slate-800">إدارة المدفوعات</h2>
               <p className="text-slate-400 text-sm mt-1">متابعة الاشتراكات الشهرية</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href={`/groups/${id}/monthly`}>
+          <div className="card flex flex-col items-center text-center py-10 gap-4 border-2 border-transparent hover:border-purple-200 hover:shadow-md cursor-pointer transition-all h-full justify-between">
+            <div className="w-16 h-16 rounded-2xl bg-purple-600 flex items-center justify-center shadow-md shrink-0">
+              <HiCalendarDays className="text-3xl text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">السجل الشهري المجمع</h2>
+              <p className="text-slate-400 text-sm mt-1">التقرير الشهري العام ومستويات التزام الطلاب</p>
             </div>
           </div>
         </Link>

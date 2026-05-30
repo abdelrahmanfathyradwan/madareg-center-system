@@ -9,7 +9,7 @@ const cairo = Cairo({
 });
 
 export const metadata = {
-  title: "نظام مركز مدارج",
+  title: " مركز مدارج",
   description: "نظام إدارة الحضور والمدفوعات لمركز مدارج لتحفيظ القرآن الكريم",
 };
 

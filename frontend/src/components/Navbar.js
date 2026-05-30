@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HiHome, HiUserGroup, HiExclamationTriangle } from "react-icons/hi2";
+import { HiHome, HiUserGroup, HiExclamationTriangle, HiUsers } from "react-icons/hi2";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -11,6 +11,7 @@ export default function Navbar() {
   const links = [
     { href: "/", label: "الرئيسية", icon: HiHome },
     { href: "/groups", label: "الحلقات", icon: HiUserGroup },
+    { href: "/students", label: "الطلاب", icon: HiUsers },
     { href: "/risk", label: "متابعة الطلاب", icon: HiExclamationTriangle },
   ];
 
@@ -46,7 +47,7 @@ export default function Navbar() {
           {/* Navigation Links - Responsive Spacing */}
           <div className="flex items-center gap-1 md:gap-2">
             {links.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href;
+              const active = href === "/" ? pathname === href : pathname.startsWith(href);
               return (
                 <Link
                   key={href}

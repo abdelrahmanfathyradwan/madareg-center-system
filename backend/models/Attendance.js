@@ -8,5 +8,7 @@ const attendanceSchema = new mongoose.Schema({
 
 // Prevent duplicate attendance records
 attendanceSchema.index({ sessionId: 1, studentId: 1 }, { unique: true });
+// Optimize queries by studentId
+attendanceSchema.index({ studentId: 1 });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

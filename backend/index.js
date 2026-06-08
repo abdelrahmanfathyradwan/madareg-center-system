@@ -17,12 +17,27 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// Auth Middleware
+app.use('/api', (req, res, next) => {
+  // Allow auth and health endpoints
+  if (req.path.startsWith('/auth') || req.path === '/health') {
+    return next();
+  }
+  const token = req.headers.authorization;
+  if (token === 'Bearer madarej_admin_token_valid') {
+    return next();
+  }
+  res.status(401).json({ error: 'Unauthorized' });
+});
+
 // Routes
+app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/groups',     require('./routes/groups'));
 app.use('/api/students',   require('./routes/students'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/payments',   require('./routes/payments'));
 app.use('/api/dashboard',  require('./routes/dashboard'));
+app.use('/api/tasks',      require('./routes/tasks'));
 
 app.get('/api/health', (req, res) => {
   res.json({

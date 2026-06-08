@@ -1,0 +1,15 @@
+◇ injected env (1) from .env // tip: ⌘ override existing { override: true }
+✅ Server running on port 5001
+✅ MongoDB connected
+[Dashboard] Phase 1 (parallel): 6.278s
+[Dashboard] Phase 2 (parallel): 462.438ms
+[Dashboard] Phase 3 (at-risk populate): 437.015ms
+[Dashboard] Total Execution: 7.188s
+[Students] All Queries (parallel): 650.587ms
+[Students] Total Execution: 656.33ms
+[Groups] /today/active All Queries (parallel): 439.585ms
+[Groups] /today/active Total Execution: 440.768ms
+[Attendance] /today/absent Fetch Sessions: 258.535ms
+[Attendance] /today/absent Fetch Absent Records: 469.5ms
+[Attendance] /today/absent Total Execution: 730.613ms
+[Tasks] Total Execution: 525.542ms

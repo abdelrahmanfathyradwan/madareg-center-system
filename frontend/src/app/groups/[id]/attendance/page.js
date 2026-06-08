@@ -10,12 +10,9 @@ import {
   HiPhone,
 } from "react-icons/hi2";
 
-const STATUS_CYCLE = ["absent", "present", "contacted"];
-
 const STATUS_CONFIG = {
   present:   { label: "حاضر",   icon: HiCheckCircle, cls: "status-present"   },
   absent:    { label: "غائب",   icon: HiXCircle,     cls: "status-absent"    },
-  contacted: { label: "تواصل",  icon: HiPhone,       cls: "status-contacted" },
 };
 
 export default function AttendancePage({ params }) {
@@ -46,9 +43,11 @@ export default function AttendancePage({ params }) {
     fetchData();
   }, [id]);
 
-  const toggleStatus = async (recordId, currentStatus) => {
-    const nextStatus =
-      STATUS_CYCLE[(STATUS_CYCLE.indexOf(currentStatus) + 1) % STATUS_CYCLE.length];
+  const setStatus = async (recordId, nextStatus) => {
+    const record = data.attendance.find((a) => a._id === recordId);
+    if (!record || record.status === nextStatus) return;
+
+    const currentStatus = record.status;
     setData((prev) => ({
       ...prev,
       attendance: prev.attendance.map((a) =>
@@ -110,11 +109,6 @@ export default function AttendancePage({ params }) {
           <span className="flex items-center gap-1.5 text-sm font-bold bg-red-50 text-red-600 px-3 py-1 rounded-full">
             <HiXCircle className="text-red-400" /> {absent}
           </span>
-          {contacted > 0 && (
-            <span className="flex items-center gap-1.5 text-sm font-bold bg-amber-50 text-amber-600 px-3 py-1 rounded-full">
-              <HiPhone className="text-amber-400" /> {contacted}
-            </span>
-          )}
         </div>
       </div>
 
@@ -136,14 +130,22 @@ export default function AttendancePage({ params }) {
                   <td className="px-5 py-4 text-slate-300 text-sm">{i + 1}</td>
                   <td className="px-4 py-4 text-base font-semibold text-slate-800">{record.studentName}</td>
                   <td className="px-4 py-4">
-                    <button
-                      onClick={() => toggleStatus(record._id, record.status)}
-                      disabled={saving[record._id]}
-                      className={`w-full py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-60 ${cfg.cls}`}
-                    >
-                      <cfg.icon className="text-base" />
-                      {cfg.label}
-                    </button>
+                    <div className="flex gap-2 w-full justify-center">
+                      <button
+                        onClick={() => setStatus(record._id, "present")}
+                        disabled={saving[record._id] || record.status === "present"}
+                        className={`flex-1 py-3 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition-all duration-75 border ${record.status === "present" ? "bg-emerald-500 text-white border-emerald-500 shadow-md" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"} active:scale-95`}
+                      >
+                        <HiCheckCircle className="text-xl" /> حاضر
+                      </button>
+                      <button
+                        onClick={() => setStatus(record._id, "absent")}
+                        disabled={saving[record._id] || record.status === "absent"}
+                        className={`flex-1 py-3 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition-all duration-75 border ${record.status === "absent" ? "bg-red-500 text-white border-red-500 shadow-md" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"} active:scale-95`}
+                      >
+                        <HiXCircle className="text-xl" /> غائب
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

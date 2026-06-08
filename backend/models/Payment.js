@@ -8,5 +8,7 @@ const paymentSchema = new mongoose.Schema({
 
 // One payment record per student per month
 paymentSchema.index({ studentId: 1, month: 1 }, { unique: true });
+// Optimize queries filtering by month
+paymentSchema.index({ month: 1 });
 
 module.exports = mongoose.model('Payment', paymentSchema);

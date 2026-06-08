@@ -28,19 +28,27 @@ router.post('/init', async (req, res) => {
       existingMap[p.studentId.toString()] = p;
     });
 
-    // Create missing payment records
-    const newRecords = [];
+    // Create missing payment records atomically using bulkWrite
+    const bulkOps = [];
     for (const student of students) {
       if (!existingMap[student._id.toString()]) {
-        newRecords.push({
-          studentId: student._id,
-          month: targetMonth,
-          status: 'unpaid'
+        bulkOps.push({
+          updateOne: {
+            filter: { studentId: student._id, month: targetMonth },
+            update: { $setOnInsert: { studentId: student._id, month: targetMonth, status: 'unpaid' } },
+            upsert: true
+          }
         });
       }
     }
-    if (newRecords.length > 0) {
-      await Payment.insertMany(newRecords);
+    if (bulkOps.length > 0) {
+      try {
+        await Payment.bulkWrite(bulkOps, { ordered: false });
+      } catch (e) {
+        if (e.code !== 11000 && (!e.message || !e.message.includes('11000'))) {
+          throw e;
+        }
+      }
     }
 
     // Fetch all payment records

@@ -1,18 +1,42 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HiHome, HiUserGroup, HiExclamationTriangle, HiUsers } from "react-icons/hi2";
+import { HiHome, HiUserGroup, HiExclamationTriangle, HiUsers, HiCalendarDays, HiClipboardDocumentList } from "react-icons/hi2";
+import { api } from "@/lib/api";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [uncontactedCount, setUncontactedCount] = useState(0);
+
+  useEffect(() => {
+    if (pathname === '/login') return;
+    const fetchAbsences = async () => {
+      try {
+        const absent = await api.getTodayAbsent();
+        const uncontacted = absent.filter(a => !a.isContacted).length;
+        setUncontactedCount(uncontacted);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchAbsences();
+    // Setting up a simple interval to keep it reasonably fresh
+    const interval = setInterval(fetchAbsences, 60000);
+    return () => clearInterval(interval);
+  }, [pathname === '/login']); // Only re-run if login status changes
+
+  if (pathname === '/login') return null;
 
   const links = [
     { href: "/", label: "الرئيسية", icon: HiHome },
     { href: "/groups", label: "الحلقات", icon: HiUserGroup },
     { href: "/students", label: "الطلاب", icon: HiUsers },
+    { href: "/tasks", label: "المهام", icon: HiClipboardDocumentList },
     { href: "/risk", label: "متابعة الطلاب", icon: HiExclamationTriangle },
+    { href: "/absences", label: "غياب اليوم", icon: HiCalendarDays, badge: uncontactedCount > 0 ? uncontactedCount : null },
   ];
 
   return (
@@ -46,7 +70,7 @@ export default function Navbar() {
 
           {/* Navigation Links - Responsive Spacing */}
           <div className="flex items-center gap-1 md:gap-2">
-            {links.map(({ href, label, icon: Icon }) => {
+            {links.map(({ href, label, icon: Icon, badge }) => {
               const active = href === "/" ? pathname === href : pathname.startsWith(href);
               return (
                 <Link
@@ -61,6 +85,11 @@ export default function Navbar() {
                 >
                   <Icon className={`text-xl md:text-2xl ${active ? "scale-110" : "opacity-80 font-bold"}`} />
                   <span className="hidden lg:block">{label}</span>
+                  {badge && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm z-10">
+                      {badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}

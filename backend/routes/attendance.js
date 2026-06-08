@@ -15,11 +15,12 @@ router.post('/start', async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Find or create session
-    let session = await Session.findOne({ groupId, date: today });
-    if (!session) {
-      session = await Session.create({ groupId, date: today });
-    }
+    // Find or create session atomically to prevent duplicate key errors (E11000)
+    let session = await Session.findOneAndUpdate(
+      { groupId, date: today },
+      { $setOnInsert: { groupId, date: today } },
+      { new: true, upsert: true }
+    );
 
     // Get all students in the group
     const students = await Student.find({ groupId }).lean();
@@ -31,19 +32,28 @@ router.post('/start', async (req, res) => {
       attendanceMap[a.studentId.toString()] = a;
     });
 
-    // Create missing attendance records (default absent)
-    const newRecords = [];
+    // Create missing attendance records (default absent) atomically using bulkWrite
+    const bulkOps = [];
     for (const student of students) {
       if (!attendanceMap[student._id.toString()]) {
-        newRecords.push({
-          sessionId: session._id,
-          studentId: student._id,
-          status: 'absent'
+        bulkOps.push({
+          updateOne: {
+            filter: { sessionId: session._id, studentId: student._id },
+            update: { $setOnInsert: { sessionId: session._id, studentId: student._id, status: 'absent' } },
+            upsert: true
+          }
         });
       }
     }
-    if (newRecords.length > 0) {
-      await Attendance.insertMany(newRecords);
+    if (bulkOps.length > 0) {
+      try {
+        await Attendance.bulkWrite(bulkOps, { ordered: false });
+      } catch (e) {
+        // Ignore duplicate key errors if concurrent requests still manage to trigger it during upserts
+        if (e.code !== 11000 && (!e.message || !e.message.includes('11000'))) {
+          throw e;
+        }
+      }
     }
 
     // Fetch all attendance for this session
@@ -59,7 +69,10 @@ router.post('/start', async (req, res) => {
           _id: a._id,
           studentId: a.studentId._id,
           studentName: a.studentId.name,
-          status: a.status
+          studentGroup: a.studentId.groupId,
+          studentPhone: a.studentId.phone,
+          status: a.status,
+          isContacted: a.isContacted
         }))
     });
   } catch (err) {
@@ -67,19 +80,28 @@ router.post('/start', async (req, res) => {
   }
 });
 
-// UPDATE attendance status (instant toggle)
+// UPDATE attendance status or contact status
 router.patch('/:id', async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ error: 'Invalid attendance ID' });
     }
-    const { status } = req.body;
-    if (!['present', 'absent', 'contacted', 'late'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
+    const { status, isContacted } = req.body;
+    
+    const updateData = {};
+    if (status !== undefined) {
+      if (!['present', 'absent'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+      updateData.status = status;
     }
+    if (isContacted !== undefined) {
+      updateData.isContacted = !!isContacted;
+    }
+
     const attendance = await Attendance.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateData,
       { new: true }
     );
     if (!attendance) return res.status(404).json({ error: 'Not found' });
@@ -108,6 +130,60 @@ router.get('/history/:groupId', async (req, res) => {
 
     res.json({ sessions, attendance });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET today's absent students across all groups
+router.get('/today/absent', async (req, res) => {
+  console.time('[Attendance] /today/absent Total Execution');
+  try {
+    const today = new Date();
+    // Parse optional date parameter, default to today
+    if (req.query.date) {
+      const parsedDate = new Date(req.query.date);
+      if (!isNaN(parsedDate)) {
+        today.setTime(parsedDate.getTime());
+      }
+    }
+    today.setHours(0, 0, 0, 0);
+
+    // Get all sessions for the given date
+    console.time('[Attendance] /today/absent Fetch Sessions');
+    const sessions = await Session.find({ date: today }).lean();
+    console.timeEnd('[Attendance] /today/absent Fetch Sessions');
+    
+    const sessionIds = sessions.map(s => s._id);
+
+    // Find all absent records for these sessions
+    console.time('[Attendance] /today/absent Fetch Absent Records');
+    const absentRecords = await Attendance.find({ 
+      sessionId: { $in: sessionIds },
+      status: 'absent'
+    }).populate({
+      path: 'studentId',
+      select: 'name phone groupId',
+      populate: { path: 'groupId', select: 'name' }
+    }).lean();
+    console.timeEnd('[Attendance] /today/absent Fetch Absent Records');
+
+    // Format response
+    const result = absentRecords
+      .filter(a => a.studentId) // Null-safe
+      .map(a => ({
+        _id: a._id,
+        sessionId: a.sessionId,
+        studentId: a.studentId._id,
+        studentName: a.studentId.name,
+        studentPhone: a.studentId.phone,
+        groupName: a.studentId.groupId?.name || 'بدون حلقة',
+        isContacted: a.isContacted
+      }));
+
+    res.json(result);
+    console.timeEnd('[Attendance] /today/absent Total Execution');
+  } catch (err) {
+    console.timeEnd('[Attendance] /today/absent Total Execution');
     res.status(500).json({ error: err.message });
   }
 });

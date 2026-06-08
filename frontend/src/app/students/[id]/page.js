@@ -28,6 +28,19 @@ export default function StudentProfilePage({ params }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteStudent = async () => {
+    if (!confirm("هل أنت متأكد من حذف هذا الطالب نهائياً؟")) return;
+    setDeleting(true);
+    try {
+      await api.deleteStudent(id);
+      router.push("/students");
+    } catch (err) {
+      alert("فشل حذف الطالب: " + (err.message || ""));
+      setDeleting(false);
+    }
+  };
 
   // Decoupled edit states
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -371,6 +384,14 @@ export default function StudentProfilePage({ params }) {
               >
                 <HiPencilSquare className="text-base text-slate-500" />
                 <span>تعديل البيانات</span>
+              </button>
+              <button
+                onClick={handleDeleteStudent}
+                disabled={deleting}
+                className="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center gap-2"
+              >
+                <HiTrash className="text-base" />
+                <span>{deleting ? "جاري الحذف..." : "حذف الطالب"}</span>
               </button>
             </div>
 

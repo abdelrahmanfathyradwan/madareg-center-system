@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Link from "next/link";
-import { HiArrowLeft } from "react-icons/hi2";
+import { HiArrowLeft, HiPlus } from "react-icons/hi2";
 
 export default function AllGroupsPage() {
   const [groups, setGroups]   = useState([]);
@@ -41,7 +41,12 @@ export default function AllGroupsPage() {
 
   return (
     <main className="max-w-5xl mx-auto p-6 md:p-10">
-      <h1 className="text-3xl font-black text-slate-800 mb-8">كل الحلقات</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-black text-slate-800">كل الحلقات</h1>
+        <Link href="/groups/create" className="btn btn-primary shadow-sm">
+          <HiPlus className="text-lg ml-1" /> إضافة حلقة
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {groups.map((group) => (
@@ -54,10 +59,14 @@ export default function AllGroupsPage() {
                     <span>الأيام</span>
                     <span className="font-medium text-slate-700">{group.days.join(" - ")}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>الوقت</span>
-                    <span className="font-medium text-slate-700">{group.time}</span>
-                  </div>
+                  {group.timePeriod && (
+                    <div className="flex justify-between">
+                      <span>الوقت</span>
+                      <span className="font-medium text-slate-700">
+                        {group.timePeriod === 'Morning' ? 'صباحية (8 ص - 1 م)' : 'مسائية (2 م - 6 م)'}
+                      </span>
+                    </div>
+                  )}
                   {group.teacher && (
                     <div className="flex justify-between">
                       <span>المعلم</span>

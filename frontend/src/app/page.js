@@ -32,9 +32,11 @@ function GroupCard({ group }) {
       <div>
         <h3 className="text-xl font-bold text-slate-800 mb-2">{group.name}</h3>
         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <span className="flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-lg">
-            <HiClock className="text-slate-400" /> {group.time}
-          </span>
+          {group.timePeriod && (
+            <span className="flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-lg">
+              <HiClock className="text-slate-400" /> {group.timePeriod === 'Morning' ? 'صباحية (8 ص - 1 م)' : 'مسائية (2 م - 6 م)'}
+            </span>
+          )}
           <span className="flex items-center gap-1 bg-slate-50 px-2.5 py-1 rounded-lg">
             <HiCalendarDays className="text-slate-400" /> {group.days.join(" - ")}
           </span>

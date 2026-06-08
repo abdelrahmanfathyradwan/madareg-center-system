@@ -11,6 +11,7 @@ import {
   HiEnvelopeOpen,
   HiUserCircle,
   HiChevronLeft,
+  HiPlus,
 } from "react-icons/hi2";
 
 export default function StudentsDirectoryPage() {
@@ -90,9 +91,14 @@ export default function StudentsDirectoryPage() {
           <h1 className="text-3xl md:text-4xl font-black text-slate-800 mb-2">دليل الطلاب العام</h1>
           <p className="text-slate-500 font-medium">إدارة ومتابعة جميع طلاب المركز في مكان واحد</p>
         </div>
-        <div className="bg-blue-50 text-blue-700 px-5 py-3 rounded-2xl font-bold flex items-center gap-2 shrink-0">
-          <HiAcademicCap className="text-2xl text-blue-500" />
-          <span>إجمالي الطلاب: {students.length} طالب</span>
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="bg-blue-50 text-blue-700 px-5 py-3 rounded-2xl font-bold flex items-center gap-2">
+            <HiAcademicCap className="text-2xl text-blue-500" />
+            <span>إجمالي الطلاب: {students.length} طالب</span>
+          </div>
+          <Link href="/students/create" className="btn btn-primary px-5 py-3 rounded-2xl shadow-sm flex items-center gap-2">
+             <HiPlus className="text-xl" /> إضافة طالب
+          </Link>
         </div>
       </div>
 

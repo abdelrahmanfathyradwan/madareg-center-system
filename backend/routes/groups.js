@@ -31,29 +31,31 @@ router.get('/', async (req, res) => {
 
 // GET today's groups (filtered by Arabic day name)
 router.get('/today/active', async (req, res) => {
+  console.time('[Groups] /today/active Total Execution');
   try {
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    // Also handle alternate spellings
     const dayAlt = ['الاحد', 'الاثنين', 'الثلاثاء', 'الاربعاء', 'الخميس', 'الجمعة', 'السبت'];
     const todayIndex = new Date().getDay();
     const todayName = dayNames[todayIndex];
     const todayAlt = dayAlt[todayIndex];
 
-    const groups = await Group.find({
-      $or: [
-        { days: todayName },
-        { days: todayAlt }
-      ]
-    }).lean();
-
-    // Attach student counts
-    const groupIds = groups.map(g => g._id);
-    const counts = await Student.aggregate([
-      { $match: { groupId: { $in: groupIds } } },
-      { $group: { _id: '$groupId', count: { $sum: 1 } } }
+    // Fire both queries in parallel
+    console.time('[Groups] /today/active All Queries (parallel)');
+    const [groups, allCounts] = await Promise.all([
+      Group.find({
+        $or: [
+          { days: todayName },
+          { days: todayAlt }
+        ]
+      }).lean(),
+      Student.aggregate([
+        { $group: { _id: '$groupId', count: { $sum: 1 } } }
+      ]),
     ]);
+    console.timeEnd('[Groups] /today/active All Queries (parallel)');
+    
     const countMap = {};
-    counts.forEach(c => { countMap[c._id.toString()] = c.count; });
+    allCounts.forEach(c => { countMap[c._id.toString()] = c.count; });
 
     const result = groups.map(g => ({
       ...g,
@@ -61,7 +63,9 @@ router.get('/today/active', async (req, res) => {
     }));
 
     res.json({ day: todayName, groups: result });
+    console.timeEnd('[Groups] /today/active Total Execution');
   } catch (err) {
+    console.timeEnd('[Groups] /today/active Total Execution');
     res.status(500).json({ error: err.message });
   }
 });
@@ -153,5 +157,39 @@ router.get('/:id/monthly', async (req, res) => {
   }
 });
 
+// POST create new group
+router.post('/', async (req, res) => {
+  try {
+    const { name, teacher, days, time, timePeriod, classroom } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    const group = await Group.create({
+      name,
+      teacher,
+      days,
+      time,
+      timePeriod,
+      classroom
+    });
+    res.status(201).json({ ...group.toObject(), studentCount: 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE group
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid group ID' });
+    }
+    const group = await Group.findByIdAndDelete(req.params.id);
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    res.json({ message: 'Group deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;

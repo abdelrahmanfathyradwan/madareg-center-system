@@ -5,6 +5,7 @@ const Student = require('../models/Student');
 const Attendance = require('../models/Attendance');
 const Payment = require('../models/Payment');
 const Session = require('../models/Session');
+const Group = require('../models/Group');
 
 // GET students by group
 router.get('/group/:groupId', async (req, res) => {
@@ -28,27 +29,24 @@ router.get('/:id', async (req, res) => {
     const student = await Student.findById(req.params.id).populate('groupId', 'name').lean();
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
-    // Fetch attendance history
-    const attendanceRecords = await Attendance.find({ studentId: student._id }).lean();
-    
-    // Fetch associated sessions to get the dates
-    const sessionIds = attendanceRecords.map(a => a.sessionId);
-    const sessions = await Session.find({ _id: { $in: sessionIds } }).lean();
-    const sessionMap = {};
-    sessions.forEach(s => { sessionMap[s._id.toString()] = s.date; });
-
+    // Fetch attendance history with populated sessions
+    const attendanceRecords = await Attendance.find({ studentId: student._id })
+      .populate('sessionId', 'date')
+      .lean();
+      
     // Construct detailed attendance history
     const attendanceHistory = attendanceRecords.map(a => ({
       _id: a._id,
-      sessionId: a.sessionId,
+      sessionId: a.sessionId ? a.sessionId._id : null,
       status: a.status,
-      date: sessionMap[a.sessionId.toString()] || null,
+      isContacted: a.isContacted,
+      date: a.sessionId ? a.sessionId.date : null,
     })).sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // Calculate attendance percentage
     const totalSessions = attendanceHistory.length;
     const presentSessions = attendanceHistory.filter(a => a.status === 'present').length;
-    const lateSessions = attendanceHistory.filter(a => a.status === 'late' || a.status === 'contacted').length; // let's treat contacted as absent, but present is present
+    const lateSessions = attendanceHistory.filter(a => a.status === 'absent' && a.isContacted).length; // Just keeping the variable, not currently used in pct calculation
     const attendancePercentage = totalSessions > 0 ? Math.round((presentSessions / totalSessions) * 100) : 100;
 
     // Fetch payments history
@@ -77,26 +75,34 @@ router.get('/:id', async (req, res) => {
 
 // GET all students
 router.get('/', async (req, res) => {
+  console.time('[Students] Total Execution');
   try {
-    // Exclude avatar from the query to avoid large payloads
-    const students = await Student.find().select('-avatar').populate('groupId', 'name').lean();
-    
-    // Fetch all attendance & payments to calculate visual indicators
-    const allAttendance = await Attendance.find().lean();
-    const allPayments = await Payment.find().lean();
-    
-    // Group records by student
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
+    // Fire all 3 independent queries in parallel
+    console.time('[Students] All Queries (parallel)');
+    const [students, attendanceStats, unpaidPayments] = await Promise.all([
+      Student.find().select('-avatar').populate('groupId', 'name').lean(),
+      Attendance.aggregate([
+        {
+          $group: {
+            _id: '$studentId',
+            total: { $sum: 1 },
+            present: { $sum: { $cond: [{ $eq: ['$status', 'present'] }, 1, 0] } }
+          }
+        }
+      ]),
+      Payment.find({ month: currentMonth, status: 'unpaid' }).select('studentId').lean(),
+    ]);
+    console.timeEnd('[Students] All Queries (parallel)');
+
     const attMap = {};
-    allAttendance.forEach(a => {
-      const sid = a.studentId.toString();
-      if (!attMap[sid]) attMap[sid] = { total: 0, present: 0 };
-      attMap[sid].total++;
-      if (a.status === 'present') attMap[sid].present++;
+    attendanceStats.forEach(a => {
+      attMap[a._id.toString()] = { total: a.total, present: a.present };
     });
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
     const unpaidSet = new Set(
-      allPayments.filter(p => p.month === currentMonth && p.status === 'unpaid').map(p => p.studentId.toString())
+      unpaidPayments.map(p => p.studentId.toString())
     );
 
     const result = students.map(s => {
@@ -121,7 +127,9 @@ router.get('/', async (req, res) => {
     });
 
     res.json(result);
+    console.timeEnd('[Students] Total Execution');
   } catch (err) {
+    console.timeEnd('[Students] Total Execution');
     res.status(500).json({ error: err.message });
   }
 });
@@ -193,6 +201,50 @@ router.delete('/:id/notes/:noteId', async (req, res) => {
     await student.save();
 
     res.json({ message: 'Note deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// POST create new student
+router.post('/', async (req, res) => {
+  try {
+    const { name, phone, age, avatar, groupId } = req.body;
+    if (!name || !groupId) {
+      return res.status(400).json({ error: 'Name and group are required' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: 'Invalid group ID' });
+    }
+    const groupExists = await Group.findById(groupId);
+    if (!groupExists) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    const student = await Student.create({
+      name,
+      phone,
+      age: age ? parseInt(age, 10) : null,
+      avatar,
+      groupId
+    });
+    
+    // Fetch with populated group
+    const populatedStudent = await Student.findById(student._id).populate('groupId', 'name').lean();
+    res.status(201).json(populatedStudent);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE student
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid student ID' });
+    }
+    const student = await Student.findByIdAndDelete(req.params.id);
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    res.json({ message: 'Student deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

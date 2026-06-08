@@ -12,6 +12,7 @@ import {
   HiClock,
   HiAcademicCap,
   HiUsers,
+  HiTrash,
 } from "react-icons/hi2";
 
 export default function GroupPage({ params }) {
@@ -20,6 +21,19 @@ export default function GroupPage({ params }) {
   const [group, setGroup]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteGroup = async () => {
+    if (!confirm("هل أنت متأكد من حذف هذه الحلقة؟ سيتم حذفها نهائياً.")) return;
+    setDeleting(true);
+    try {
+      await api.deleteGroup(id);
+      router.push("/groups");
+    } catch (err) {
+      alert("فشل حذف الحلقة: " + (err.message || ""));
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -63,16 +77,28 @@ export default function GroupPage({ params }) {
 
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-3xl font-black text-slate-800 mb-4">{group.name}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <h1 className="text-3xl font-black text-slate-800">{group.name}</h1>
+          <button
+            onClick={handleDeleteGroup}
+            disabled={deleting}
+            className="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 text-sm flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-colors"
+          >
+            <HiTrash className="text-base" />
+            <span>{deleting ? "جاري الحذف..." : "حذف الحلقة"}</span>
+          </button>
+        </div>
         <div className="flex flex-wrap gap-2 text-sm">
           <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-slate-600">
             <HiCalendarDays className="text-slate-400 text-base" />
             {group.days.join(" - ")}
           </span>
-          <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-slate-600">
-            <HiClock className="text-slate-400 text-base" />
-            {group.time}
-          </span>
+          {group.timePeriod && (
+            <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-slate-600">
+              <HiClock className="text-slate-400 text-base" />
+              {group.timePeriod === 'Morning' ? 'صباحية (8 ص - 1 م)' : 'مسائية (2 م - 6 م)'}
+            </span>
+          )}
           {group.teacher && (
             <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-slate-600">
               <HiAcademicCap className="text-slate-400 text-base" />

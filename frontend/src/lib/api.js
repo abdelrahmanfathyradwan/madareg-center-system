@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://madareg-center-system.vercel.app/api";
 const getHeaders = () => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('madarej_token') : null;
   return {

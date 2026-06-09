@@ -155,11 +155,10 @@ router.get('/today/absent', async (req, res) => {
     
     const sessionIds = sessions.map(s => s._id);
 
-    // Find all absent records for these sessions
+    // Find all attendance records for these sessions
     console.time('[Attendance] /today/absent Fetch Absent Records');
-    const absentRecords = await Attendance.find({ 
-      sessionId: { $in: sessionIds },
-      status: 'absent'
+    const allRecords = await Attendance.find({ 
+      sessionId: { $in: sessionIds }
     }).populate({
       path: 'studentId',
       select: 'name phone groupId',
@@ -167,9 +166,22 @@ router.get('/today/absent', async (req, res) => {
     }).lean();
     console.timeEnd('[Attendance] /today/absent Fetch Absent Records');
 
+    // Deduplicate records by studentId, keeping 'present' status over 'absent' if there are multiple
+    const latestAttendanceMap = new Map();
+    allRecords.forEach(a => {
+      if (a.studentId) {
+        const sid = a.studentId._id.toString();
+        if (!latestAttendanceMap.has(sid) || a.status === 'present') {
+          latestAttendanceMap.set(sid, a);
+        }
+      }
+    });
+
+    // Filter to only absent students
+    const uniqueAbsentRecords = Array.from(latestAttendanceMap.values()).filter(a => a.status === 'absent');
+
     // Format response
-    const result = absentRecords
-      .filter(a => a.studentId) // Null-safe
+    const result = uniqueAbsentRecords
       .map(a => ({
         _id: a._id,
         sessionId: a.sessionId,

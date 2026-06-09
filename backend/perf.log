@@ -1,15 +1,21 @@
-◇ injected env (1) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (1) from .env // tip: ⌘ enable debugging { debug: true }
 ✅ Server running on port 5001
 ✅ MongoDB connected
-[Dashboard] Phase 1 (parallel): 6.278s
-[Dashboard] Phase 2 (parallel): 462.438ms
-[Dashboard] Phase 3 (at-risk populate): 437.015ms
-[Dashboard] Total Execution: 7.188s
-[Students] All Queries (parallel): 650.587ms
-[Students] Total Execution: 656.33ms
-[Groups] /today/active All Queries (parallel): 439.585ms
-[Groups] /today/active Total Execution: 440.768ms
-[Attendance] /today/absent Fetch Sessions: 258.535ms
-[Attendance] /today/absent Fetch Absent Records: 469.5ms
-[Attendance] /today/absent Total Execution: 730.613ms
-[Tasks] Total Execution: 525.542ms
+[Dashboard] Query: Student.countDocuments(): 7.645s
+[Dashboard] Query: Session.find(today): 7.675s
+[Dashboard] Query: Session.find().sort().limit(20): 8.047s
+[Dashboard] Query: Payment.aggregate(currentMonth): 8.109s
+[Dashboard] Query: Payment.find(unpaid): 8.515s
+[Dashboard] Query: Group.countDocuments(): 9.559s
+[Dashboard] 01. Phase 1 (parallel block): 9.565s
+[Dashboard] 02. Data Processing (Map Session Ids): 0.045ms
+[Dashboard] Query: Attendance.find(today sessionIds): 127.137ms
+[Dashboard] Query: Attendance.find(recent sessionIds): 128.645ms
+[Dashboard] 03. Phase 2 (parallel block): 129.968ms
+[Dashboard] 04. Data Processing (Today Stats): 0.015ms
+[Dashboard] 05. Data Processing (At-Risk Calculation): 0.551ms
+[Dashboard] Query: Student.find(at-risk set) + populate: 158.549ms
+[Dashboard] 06. Phase 3 (at-risk populate block): 160.958ms
+[Dashboard] 07. Data Processing (At-Risk Assembly): 0.014ms
+[Dashboard] 08. Response Assembly: 7.468ms
+[Dashboard] 00. Total Execution: 9.868s

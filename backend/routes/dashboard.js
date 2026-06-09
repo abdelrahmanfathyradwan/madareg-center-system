@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
 
     console.time('[Dashboard] 03. Phase 2 (parallel block)');
     const [todayAttendance, recentAttendance] = await Promise.all([
-      timeQuery('[Dashboard] Query: Attendance.find(today sessionIds)', Attendance.find({ sessionId: { $in: sessionIds } }).lean()),
+      timeQuery('[Dashboard] Query: Attendance.find(today sessionIds)', Attendance.find({ sessionId: { $in: sessionIds } }).populate('studentId', '_id').lean()),
       timeQuery('[Dashboard] Query: Attendance.find(recent sessionIds)', Attendance.find({ sessionId: { $in: recentSessionIds } }).lean()),
     ]);
     console.timeEnd('[Dashboard] 03. Phase 2 (parallel block)');
@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
     const uniqueAttendanceMap = new Map();
     todayAttendance.forEach(a => {
       if (a.studentId) {
-        const sid = a.studentId.toString();
+        const sid = a.studentId._id ? a.studentId._id.toString() : a.studentId.toString();
         if (!uniqueAttendanceMap.has(sid) || a.status === 'present') {
           uniqueAttendanceMap.set(sid, a);
         }

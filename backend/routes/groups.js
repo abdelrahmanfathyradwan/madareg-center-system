@@ -178,6 +178,35 @@ router.post('/', async (req, res) => {
   }
 });
 
+// PUT update group
+router.put('/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid group ID' });
+    }
+    const { name, teacher, days, time, timePeriod, classroom } = req.body;
+    
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (teacher !== undefined) updateData.teacher = teacher;
+    if (days !== undefined) updateData.days = days;
+    if (time !== undefined) updateData.time = time;
+    if (timePeriod !== undefined) updateData.timePeriod = timePeriod;
+    if (classroom !== undefined) updateData.classroom = classroom;
+
+    const group = await Group.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+    
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    res.json(group);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE group
 router.delete('/:id', async (req, res) => {
   try {

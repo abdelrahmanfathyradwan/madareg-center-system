@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://madareg-center-system.vercel.app/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL||"https://madareg-center-system.vercel.app/api";
 const getHeaders = () => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('madarej_token') : null;
   return {
@@ -31,6 +31,11 @@ export const api = {
   deleteGroup: (id) => fetch(`${BASE_URL}/groups/${id}`, { method: 'DELETE', headers: getHeaders() }).then(handleResponse),
   createGroup: (data) => fetch(`${BASE_URL}/groups`, {
     method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  }).then(handleResponse),
+  updateGroup: (id, data) => fetch(`${BASE_URL}/groups/${id}`, {
+    method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify(data)
   }).then(handleResponse),

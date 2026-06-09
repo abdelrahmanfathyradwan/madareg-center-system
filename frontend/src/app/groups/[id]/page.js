@@ -13,6 +13,7 @@ import {
   HiAcademicCap,
   HiUsers,
   HiTrash,
+  HiPencilSquare,
 } from "react-icons/hi2";
 
 export default function GroupPage({ params }) {
@@ -79,14 +80,23 @@ export default function GroupPage({ params }) {
       <div className="mb-10">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <h1 className="text-3xl font-black text-slate-800">{group.name}</h1>
-          <button
-            onClick={handleDeleteGroup}
-            disabled={deleting}
-            className="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 text-sm flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-colors"
-          >
-            <HiTrash className="text-base" />
-            <span>{deleting ? "جاري الحذف..." : "حذف الحلقة"}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/groups/${id}/edit`}
+              className="btn bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-sm flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-colors"
+            >
+              <HiPencilSquare className="text-base" />
+              <span>تعديل الحلقة</span>
+            </Link>
+            <button
+              onClick={handleDeleteGroup}
+              disabled={deleting}
+              className="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 text-sm flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-colors"
+            >
+              <HiTrash className="text-base" />
+              <span>{deleting ? "جاري الحذف..." : "حذف الحلقة"}</span>
+            </button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
           <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-slate-600">

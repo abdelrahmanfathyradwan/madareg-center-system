@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Link from "next/link";
 import { HiArrowLeft, HiPlus } from "react-icons/hi2";
+import { GroupCardSkeleton } from "@/components/skeletons/GroupCardSkeleton";
 
 export default function AllGroupsPage() {
   const [groups, setGroups]   = useState([]);
@@ -25,12 +26,24 @@ export default function AllGroupsPage() {
     fetchData();
   }, []);
 
-  if (loading)
+    if (loading) {
+    // Loading state: keep title and button, render skeleton cards in grid
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="spinner" />
-      </div>
+      <main className="max-w-5xl mx-auto p-6 md:p-10">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-black text-slate-800">كل الحلقات</h1>
+          <Link href="/groups/create" className="btn btn-primary shadow-sm">
+            <HiPlus className="text-lg ml-1" /> إضافة حلقة
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <GroupCardSkeleton key={i} />
+          ))}
+        </div>
+      </main>
     );
+  }
 
   if (error)
     return (

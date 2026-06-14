@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { TableSkeletonRows } from '@/components/skeletons/TableSkeletonRows';
 import Link from "next/link";
 import {
   HiMagnifyingGlass,
@@ -45,13 +46,9 @@ export default function StudentsDirectoryPage() {
     fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="spinner" />
-      </div>
-    );
-  }
+  // Loading will be handled within the table body
+
+
 
   if (error) {
     return (
@@ -198,144 +195,138 @@ export default function StudentsDirectoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredStudents.map((student) => {
-                  // Subtle indicators
-                  let statusBadge = (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                      ملتزم
-                    </span>
-                  );
-                  if (student.visualStatus === "average") {
-                    statusBadge = (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                        متوسط
+                {loading ? (
+                  <TableSkeletonRows columns={6} rows={5} />
+                ) : (
+                  filteredStudents.map((student) => {
+                    // Subtle indicators
+                    let statusBadge = (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                        ملتزم
                       </span>
                     );
-                  } else if (student.visualStatus === "at risk") {
-                    statusBadge = (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                        معرض للفصل
-                      </span>
-                    );
-                  }
+                    if (student.visualStatus === "average") {
+                      statusBadge = (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                          متوسط
+                        </span>
+                      );
+                    } else if (student.visualStatus === "at risk") {
+                      statusBadge = (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                          معرض للفصل
+                        </span>
+                      );
+                    }
 
-                  const phoneUrl = student.phone
-                    ? `https://wa.me/${student.phone.replace(/[^0-9]/g, "")}`
-                    : null;
+                    const phoneUrl = student.phone
+                      ? `https://wa.me/${student.phone.replace(/[^0-9]/g, "")}`
+                      : null;
 
-                  return (
-                    <tr
-                      key={student._id}
-                      className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                    >
-                      {/* Name & Photo */}
-                      <td className="px-6 py-5">
-                        <Link href={`/students/${student._id}`} className="flex items-center gap-3">
-                          {student.avatar ? (
-                            <img
-                              src={student.avatar}
-                              alt={student.name}
-                              className="w-10 h-10 rounded-full object-cover border border-blue-100 shrink-0"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center font-black text-blue-600 text-sm tracking-wider uppercase shrink-0">
-                              {student.name.charAt(0)}
-                            </div>
-                          )}
-                          <div>
-                            <span className="block text-slate-800 font-bold group-hover:text-blue-600 transition-colors text-base">
-                              {student.name}
-                            </span>
-                            {student.phone && (
-                              <span className="block text-slate-400 text-xs font-semibold mt-0.5">
-                                {student.phone}
-                              </span>
+                    return (
+                      <tr
+                        key={student._id}
+                        className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                      >
+                        {/* Name & Photo */}
+                        <td className="px-6 py-5">
+                          <Link href={`/students/${student._id}`} className="flex items-center gap-3">
+                            {student.avatar ? (
+                              <img
+                                src={student.avatar}
+                                alt={student.name}
+                                className="w-10 h-10 rounded-full object-cover border border-blue-100 shrink-0"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center font-black text-blue-600 text-sm tracking-wider uppercase shrink-0">
+                                {student.name.charAt(0)}
+                              </div>
                             )}
-                          </div>
-                        </Link>
-                      </td>
-
-                      {/* Group */}
-                      <td className="px-6 py-5 text-slate-600 font-semibold text-sm">
-                        {student.groupId?.name || "غير محدد"}
-                      </td>
-
-                      {/* Attendance indicator */}
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${
-                                student.attendancePercentage >= 80
-                                  ? "bg-emerald-500"
-                                  : student.attendancePercentage >= 60
-                                  ? "bg-blue-500"
-                                  : "bg-amber-500"
-                              }`}
-                              style={{ width: `${student.attendancePercentage}%` }}
-                            />
-                          </div>
-                          <span className="text-slate-700 font-bold text-sm">
-                            {student.attendancePercentage}%
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Payment Indicator */}
-                      <td className="px-6 py-5 text-center">
-                        {student.paymentStatus === "paid" ? (
-                          <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
-                            مسدد
-                          </span>
-                        ) : (
-                          <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700">
-                            غير مسدد
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Status indicator */}
-                      <td className="px-6 py-5 text-center">
-                        {statusBadge}
-                      </td>
-
-                      {/* WhatsApp quick action */}
-                      <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-2">
-                          {phoneUrl ? (
-                            <a
-                              href={phoneUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              title="تواصل عبر الواتساب"
-                              className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition-colors"
-                            >
-                              <HiPhone className="text-base" />
-                            </a>
-                          ) : (
-                            <button
-                              disabled
-                              title="لا يوجد رقم هاتف مسجل"
-                              className="w-9 h-9 rounded-lg bg-slate-50 text-slate-300 flex items-center justify-center cursor-not-allowed"
-                            >
-                              <HiPhone className="text-base" />
-                            </button>
-                          )}
-                          <Link
-                            href={`/students/${student._id}`}
-                            className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors"
-                            title="الملف الشخصي"
-                          >
-                            <HiChevronLeft className="text-lg" />
+                            <div>
+                              <span className="block text-slate-800 font-bold group-hover:text-blue-600 transition-colors text-base">
+                                {student.name}
+                              </span>
+                              {student.phone && (
+                                <span className="block text-slate-400 text-xs font-semibold mt-0.5">
+                                  {student.phone}
+                                </span>
+                              )}
+                            </div>
                           </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+
+                        {/* الحلقة */}
+                        <td className="px-6 py-5 text-slate-700 font-semibold text-sm">
+                          {student.groupId?.name || "بدون حلقة"}
+                        </td>
+
+                        {/* نسبة الحضور */}
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 bg-slate-100 rounded-full h-2 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  student.attendancePercentage >= 80
+                                    ? "bg-emerald-500"
+                                    : student.attendancePercentage >= 60
+                                    ? "bg-blue-500"
+                                    : "bg-amber-500"
+                                }`}
+                                style={{ width: `${student.attendancePercentage}%` }}
+                              />
+                            </div>
+                            <span className="text-slate-700 font-bold text-sm">
+                              {student.attendancePercentage}%
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* الاشتراك المالي */}
+                        <td className="px-6 py-5 text-center">
+                          {student.paymentStatus === "paid" ? (
+                            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">
+                              مدفوع
+                            </span>
+                          ) : (
+                            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700">
+                              غير مدفوع
+                            </span>
+                          )}
+                        </td>
+
+                        {/* حالة الالتزام */}
+                        <td className="px-6 py-5 text-center">
+                          {statusBadge}
+                        </td>
+
+                        {/* إجراءات سريعة */}
+                        <td className="px-6 py-5 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            {phoneUrl && (
+                              <a
+                                href={phoneUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-lg transition-colors"
+                              >
+                                <HiPhone className="text-sm" /> واتساب
+                              </a>
+                            )}
+                            <Link
+                              href={`/students/${student._id}`}
+                              className="btn btn-outline py-1.5 px-3 text-xs"
+                            >
+                              عرض الملف
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

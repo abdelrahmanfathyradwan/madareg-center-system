@@ -80,60 +80,6 @@ router.post('/start', async (req, res) => {
   }
 });
 
-// UPDATE attendance status or contact status
-router.patch('/:id', async (req, res) => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid attendance ID' });
-    }
-    const { status, isContacted } = req.body;
-    
-    const updateData = {};
-    if (status !== undefined) {
-      if (!['present', 'absent'].includes(status)) {
-        return res.status(400).json({ error: 'Invalid status' });
-      }
-      updateData.status = status;
-    }
-    if (isContacted !== undefined) {
-      updateData.isContacted = !!isContacted;
-    }
-
-    const attendance = await Attendance.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
-    if (!attendance) return res.status(404).json({ error: 'Not found' });
-    res.json(attendance);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET attendance history for a group (last N sessions)
-router.get('/history/:groupId', async (req, res) => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.groupId)) {
-      return res.status(400).json({ error: 'Invalid group ID' });
-    }
-    const limit = parseInt(req.query.limit) || 10;
-    const sessions = await Session.find({ groupId: req.params.groupId })
-      .sort({ date: -1 })
-      .limit(limit)
-      .lean();
-
-    const sessionIds = sessions.map(s => s._id);
-    const attendance = await Attendance.find({ sessionId: { $in: sessionIds } })
-      .populate('studentId', 'name')
-      .lean();
-
-    res.json({ sessions, attendance });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // GET today's absent students across all groups
 router.get('/today/absent', async (req, res) => {
   console.time('[Attendance] /today/absent Total Execution');
@@ -199,5 +145,99 @@ router.get('/today/absent', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// GET today's session and attendance for a group if it exists (does not create)
+router.get('/today/:groupId', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (!groupId || !mongoose.Types.ObjectId.isValid(groupId)) {
+      return res.status(400).json({ error: 'Invalid or missing groupId' });
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const session = await Session.findOne({ groupId, date: today }).lean();
+    if (!session) {
+      return res.json({ session: null, attendance: [] });
+    }
+
+    const attendance = await Attendance.find({ sessionId: session._id })
+      .populate('studentId', 'name')
+      .lean();
+
+    res.json({
+      session,
+      attendance: attendance
+        .filter(a => a.studentId)
+        .map(a => ({
+          _id: a._id,
+          studentId: a.studentId._id,
+          studentName: a.studentId.name,
+          studentGroup: a.studentId.groupId,
+          studentPhone: a.studentId.phone,
+          status: a.status,
+          isContacted: a.isContacted
+        }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// UPDATE attendance status or contact status
+router.patch('/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid attendance ID' });
+    }
+    const { status, isContacted } = req.body;
+    
+    const updateData = {};
+    if (status !== undefined) {
+      if (!['present', 'absent'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+      updateData.status = status;
+    }
+    if (isContacted !== undefined) {
+      updateData.isContacted = !!isContacted;
+    }
+
+    const attendance = await Attendance.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+    if (!attendance) return res.status(404).json({ error: 'Not found' });
+    res.json(attendance);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET attendance history for a group (last N sessions)
+router.get('/history/:groupId', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.groupId)) {
+      return res.status(400).json({ error: 'Invalid group ID' });
+    }
+    const limit = parseInt(req.query.limit) || 10;
+    const sessions = await Session.find({ groupId: req.params.groupId })
+      .sort({ date: -1 })
+      .limit(limit)
+      .lean();
+
+    const sessionIds = sessions.map(s => s._id);
+    const attendance = await Attendance.find({ sessionId: { $in: sessionIds } })
+      .populate('studentId', 'name')
+      .lean();
+
+    res.json({ sessions, attendance });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 module.exports = router;

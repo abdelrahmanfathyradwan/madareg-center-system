@@ -13,6 +13,8 @@ import {
   HiCalendarDays,
   HiAcademicCap,
 } from "react-icons/hi2";
+import { Spinner } from '@/components/Spinner';
+
 
 function StatCard({ label, value, color, icon: Icon, bg }) {
   return (
@@ -60,7 +62,9 @@ function GroupCard({ group }) {
 export default function Home() {
   const [todayData, setTodayData] = useState(null);
   const [summary, setSummary]     = useState(null);
-  const [loading, setLoading]     = useState(true);
+  const [loadingTodayGroups, setLoadingTodayGroups] = useState(true);
+  const [loadingRiskStudents, setLoadingRiskStudents] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [error, setError]         = useState(null);
 
   useEffect(() => {
@@ -72,22 +76,20 @@ export default function Home() {
         ]);
         setTodayData(today);
         setSummary(stats);
+        setLoadingTodayGroups(false);
+        setLoadingRiskStudents(false);
+        setLoadingStats(false);
       } catch (err) {
         setError("تعذّر الاتصال بالخادم. تأكد من تشغيل الـ Backend.");
         console.error(err);
-      } finally {
-        setLoading(false);
+        setLoadingTodayGroups(false);
+        setLoadingRiskStudents(false);
+        setLoadingStats(false);
       }
     }
     fetchData();
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="spinner" />
-      </div>
-    );
 
   if (error)
     return (
@@ -112,62 +114,75 @@ export default function Home() {
 
       {/* Stats */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <StatCard label="حضور اليوم"           value={summary?.today?.present            ?? "–"} color="border-r-blue-500"   icon={HiCheckCircle}       bg="bg-blue-500"   />
-        <StatCard label="غياب اليوم"            value={summary?.today?.absent             ?? "–"} color="border-r-red-400"    icon={HiXCircle}           bg="bg-red-400"    />
-        <StatCard label="إجمالي الطلاب"         value={summary?.totalStudents             ?? "–"} color="border-r-slate-400"  icon={HiUsers}             bg="bg-slate-400"  />
-        <StatCard label="طلاب معرضون للفصل"     value={summary?.atRiskStudents?.length    ?? "–"} color="border-r-amber-400"  icon={HiExclamationTriangle} bg="bg-amber-400" />
-      </section>
-
-      {/* Today's groups */}
-      <section>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2">
-            <HiCalendarDays className="text-blue-500" />
-            حلقات اليوم
-            {todayData?.day && (
-              <span className="text-base font-semibold text-blue-600">({todayData.day})</span>
-            )}
-          </h2>
-          <Link href="/groups" className="btn btn-outline text-sm">
-            كل الحلقات <HiChevronLeft className="text-base" />
-          </Link>
-        </div>
-
-        {todayData?.groups?.length === 0 ? (
-          <div className="card text-center py-14">
-            <HiCalendarDays className="text-5xl text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-400 text-lg">لا توجد حلقات مجدولة لليوم</p>
-          </div>
+        {/* Stats with loading */}
+        {loadingStats ? (
+          <div className="col-span-4 flex items-center justify-center py-8 min-h-[200px]"><Spinner size="lg" /></div>
         ) : (
-          <div className="flex flex-col gap-4">
-            {todayData?.groups?.map((group) => (
-              <GroupCard key={group._id} group={group} />
-            ))}
-          </div>
+          <>
+            <StatCard label="حضور اليوم"           value={summary?.today?.present            ?? "–"} color="border-r-blue-500"   icon={HiCheckCircle}       bg="bg-blue-500"   />
+            <StatCard label="غياب اليوم"            value={summary?.today?.absent             ?? "–"} color="border-r-red-400"    icon={HiXCircle}           bg="bg-red-400"    />
+            <StatCard label="إجمالي الطلاب"         value={summary?.totalStudents             ?? "–"} color="border-r-slate-400"  icon={HiUsers}             bg="bg-slate-400"  />
+            <StatCard label="طلاب معرضون للفصل"     value={summary?.atRiskStudents?.length    ?? "–"} color="border-r-amber-400"  icon={HiExclamationTriangle} bg="bg-amber-400" />
+          </>
         )}
       </section>
 
-      {/* At-risk banner */}
-      {(summary?.atRiskStudents?.length ?? 0) > 0 && (
-        <section className="mt-8">
-          <Link href="/risk">
-            <div className="card border-r-4 border-r-amber-400 bg-amber-50 flex items-center justify-between hover:bg-amber-100 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center shrink-0">
-                  <HiExclamationTriangle className="text-white text-xl" />
-                </div>
-                <div>
-                  <p className="text-amber-800 font-bold text-lg">
-                    {summary.atRiskStudents.length} طالب يحتاج متابعة
-                  </p>
-                  <p className="text-amber-600 text-sm">غياب متكرر أو اشتراكات غير مدفوعة</p>
-                </div>
-              </div>
-              <HiChevronLeft className="text-amber-400 text-2xl shrink-0" />
+        {/* Today's groups */}
+        <section>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2">
+              <HiCalendarDays className="text-blue-500" />
+              حلقات اليوم
+              {todayData?.day && (
+                <span className="text-base font-semibold text-blue-600">({todayData.day})</span>
+              )}
+            </h2>
+            <Link href="/groups" className="btn btn-outline text-sm">
+              كل الحلقات <HiChevronLeft className="text-base" />
+            </Link>
+          </div>
+
+          {loadingTodayGroups ? (
+              <div className="col-span-4 flex items-center justify-center py-8 min-h-[200px]"><Spinner size="lg" /></div>
+          ) : todayData?.groups?.length === 0 ? (
+            <div className="card text-center py-14">
+              <HiCalendarDays className="text-5xl text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-400 text-lg">لا توجد حلقات مجدولة لليوم</p>
             </div>
-          </Link>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {todayData?.groups?.map((group) => (
+                <GroupCard key={group._id} group={group} />
+              ))}
+            </div>
+          )}
         </section>
-      )}
+
+        {/* At-risk banner */}
+        {(summary?.atRiskStudents?.length ?? 0) > 0 && (
+          <section className="mt-8">
+            {loadingRiskStudents ? (
+              <div className="col-span-4 flex items-center justify-center py-8 min-h-[200px]"><Spinner size="lg" /></div>
+            ) : (
+              <Link href="/risk">
+                <div className="card border-r-4 border-r-amber-400 bg-amber-50 flex items-center justify-between hover:bg-amber-100 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center shrink-0">
+                      <HiExclamationTriangle className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <p className="text-amber-800 font-bold text-lg">
+                        {summary.atRiskStudents.length} طالب يحتاج متابعة
+                      </p>
+                      <p className="text-amber-600 text-sm">غياب متكرر أو اشتراكات غير مدفوعة</p>
+                    </div>
+                  </div>
+                  <HiChevronLeft className="text-amber-400 text-2xl shrink-0" />
+                </div>
+              </Link>
+            )}
+          </section>
+        )}
     </main>
   );
 }

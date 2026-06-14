@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL||"https://madareg-center-system.vercel.app/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ||"http://localhost:5000/api";
 const getHeaders = () => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('madarej_token') : null;
   return {
@@ -44,6 +44,10 @@ export const api = {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ groupId })
+  }).then(handleResponse),
+
+  getTodayAttendance: (groupId) => fetch(`${BASE_URL}/attendance/today/${groupId}`, {
+    headers: getHeaders()
   }).then(handleResponse),
   
   updateAttendance: (id, status, isContacted) => fetch(`${BASE_URL}/attendance/${id}`, {

@@ -11,11 +11,14 @@ import {
   HiChevronLeft,
   HiChevronRight,
 } from "react-icons/hi2";
+import { TableSkeletonRows } from "@/components/skeletons/TableSkeletonRows";
+import { useDelay } from "@/hooks/useDelay";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
+  const delayedLoading = useDelay(loading, 300);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -218,9 +221,13 @@ export default function TasksPage() {
       </form>
 
       {/* Tasks List */}
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="spinner" />
+      {delayedLoading ? (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <tbody>
+              <TableSkeletonRows columns={3} rows={5} />
+            </tbody>
+          </table>
         </div>
       ) : tasks.length === 0 ? (
         <div className="card p-10 text-center">

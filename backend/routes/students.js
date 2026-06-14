@@ -26,7 +26,7 @@ router.get('/:id', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ error: 'Invalid student ID' });
     }
-    const student = await Student.findById(req.params.id).populate('groupId', 'name').lean();
+    const student = await Student.findById(req.params.id).populate('groupId', 'name days').lean();
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     // Fetch attendance history with populated sessions
@@ -34,14 +34,75 @@ router.get('/:id', async (req, res) => {
       .populate('sessionId', 'date')
       .lean();
       
-    // Construct detailed attendance history
-    const attendanceHistory = attendanceRecords.map(a => ({
-      _id: a._id,
-      sessionId: a.sessionId ? a.sessionId._id : null,
-      status: a.status,
-      isContacted: a.isContacted,
-      date: a.sessionId ? a.sessionId.date : null,
-    })).sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Helper to generate dates for given days within a range using Arabic day names
+    const dayMap = {
+      "الأحد": 0,
+      "الاثنين": 1,
+      "الثلاثاء": 2,
+      "الأربعاء": 3,
+      "الخميس": 4,
+      "الجمعة": 5,
+      "السبت": 6,
+    };
+
+    const generateSessionDates = (daysArray, startDate, endDate) => {
+      // Convert Arabic day names to numeric day indices
+      const dayIndices = daysArray.map(d => dayMap[d.trim()]).filter(d => d !== undefined);
+      const dates = [];
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        if (dayIndices.includes(d.getDay())) {
+          dates.push(new Date(d));
+        }
+      }
+      return dates;
+    };
+
+    // Debug: output group days
+    console.log('GROUP DAYS:', student.groupId?.days);
+
+    // Determine the range: from course start date to today
+    const end = new Date();
+    const start = new Date('2026-06-07'); // course start date
+
+    const scheduleDays = student.groupId?.days || [];
+    const sessionDates = generateSessionDates(scheduleDays, start, end);
+
+    // Debug: output generated session dates
+    console.log('GENERATED DATES:', sessionDates.map(d => d.toISOString().split('T')[0]));
+
+    // Build a map of existing attendance by date string (ISO date only)
+    const attendanceMap = {};
+    attendanceRecords.forEach(rec => {
+      if (rec.sessionId && rec.sessionId.date) {
+        const iso = new Date(rec.sessionId.date).toISOString().split('T')[0];
+        attendanceMap[iso] = rec;
+      }
+    });
+
+    const attendanceHistory = sessionDates.map(dateObj => {
+      const iso = dateObj.toISOString().split('T')[0];
+      const existing = attendanceMap[iso];
+      if (existing) {
+        return {
+          _id: existing._id,
+          sessionId: existing.sessionId ? existing.sessionId._id : null,
+          status: existing.status,
+          isContacted: existing.isContacted,
+          date: existing.sessionId.date,
+        };
+      }
+      // No attendance record for this session
+      return {
+        _id: null,
+        sessionId: null,
+        status: 'no-record',
+        isContacted: false,
+        date: dateObj,
+      };
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Debug: final attendance history
+    console.log('FINAL HISTORY:', attendanceHistory);
 
     // Calculate attendance percentage
     const totalSessions = attendanceHistory.length;

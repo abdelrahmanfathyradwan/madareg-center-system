@@ -29,7 +29,7 @@ export default function AttendancePage({ params }) {
       try {
         const [groupData, attendanceData] = await Promise.all([
           api.getGroup(id),
-          api.startAttendance(id),
+          api.getTodayAttendance(id),
         ]);
         setGroup(groupData);
         setData(attendanceData);
@@ -42,6 +42,20 @@ export default function AttendancePage({ params }) {
     }
     fetchData();
   }, [id]);
+
+  const handleStartAttendance = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const attendanceData = await api.startAttendance(id);
+      setData(attendanceData);
+    } catch (err) {
+      setError(err.message || "فشل بدء تسجيل الحضور");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const setStatus = async (recordId, nextStatus) => {
     const record = data.attendance.find((a) => a._id === recordId);
@@ -82,6 +96,38 @@ export default function AttendancePage({ params }) {
         {error}
       </div>
     );
+
+  if (!data || !data.session || !data.attendance || data.attendance.length === 0) {
+    return (
+      <main className="max-w-3xl mx-auto p-4 md:p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.back()} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+              <HiChevronLeft className="text-xl" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-black text-slate-800">تسجيل الحضور</h1>
+              <p className="text-sm text-slate-400">{group?.name}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Empty state card */}
+        <div className="card text-center py-12 flex flex-col items-center justify-center border border-slate-200 bg-white shadow-sm rounded-2xl p-6">
+          <HiCheckCircle className="text-5xl text-slate-200 mb-3" />
+          <p className="text-xl font-bold text-slate-700 mb-2">لم يتم تسجيل الحضور لليوم بعد</p>
+          <p className="text-slate-400 text-sm mb-6">يمكنك بدء تسجيل الحضور لطلاب هذه المجموعة لليوم بالضغط على الزر أدناه.</p>
+          <button
+            onClick={handleStartAttendance}
+            className="btn btn-primary px-6 py-3 rounded-xl shadow-sm text-sm font-bold active:scale-95 transition-transform"
+          >
+            بدء تسجيل حضور اليوم
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   const present   = data?.attendance?.filter((a) => a.status === "present").length   ?? 0;
   const absent    = data?.attendance?.filter((a) => a.status === "absent").length    ?? 0;

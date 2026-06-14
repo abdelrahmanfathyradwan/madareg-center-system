@@ -19,6 +19,7 @@ import {
   HiUser,
   HiCheckCircle,
 } from "react-icons/hi2";
+import { StudentProfileSkeleton } from "@/components/skeletons/StudentProfileSkeleton";
 
 export default function StudentProfilePage({ params }) {
   const { id } = use(params);
@@ -183,12 +184,8 @@ export default function StudentProfilePage({ params }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="spinner" />
-      </div>
-    );
-  }
+  return <StudentProfileSkeleton />;
+}
 
   if (error || !student) {
     return (
@@ -549,7 +546,7 @@ export default function StudentProfilePage({ params }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {student.attendanceHistory.slice(0, 10).map((record) => {
+                    {student.attendanceHistory.sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 10).map((record) => {
                       let statusBadge = (
                         <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
                           حاضر
@@ -573,10 +570,16 @@ export default function StudentProfilePage({ params }) {
                             تم التواصل
                           </span>
                         );
+                      } else if (record.status === "no-record") {
+                        statusBadge = (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-50 text-gray-700">
+                            لم يتم تسجيل الحضور
+                          </span>
+                        );
                       }
 
                       return (
-                        <tr key={record._id} className="hover:bg-slate-50/20">
+                        <tr key={record._id || (record.date && new Date(record.date).toISOString())} className="hover:bg-slate-50/20">
                           <td className="px-4 py-3 font-semibold text-slate-700 text-sm">
                             {new Date(record.date).toLocaleDateString("ar-EG", {
                               weekday: "long",

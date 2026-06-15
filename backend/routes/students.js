@@ -26,15 +26,19 @@ router.get('/:id', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ error: 'Invalid student ID' });
     }
-    const student = await Student.findById(req.params.id).populate('groupId', 'name days').lean();
+
+    // Populate groupId with BOTH name and days — critical for schedule generation
+    const student = await Student.findById(req.params.id)
+      .populate({ path: 'groupId', select: 'name days' })
+      .lean();
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
     // Fetch attendance history with populated sessions
     const attendanceRecords = await Attendance.find({ studentId: student._id })
       .populate('sessionId', 'date')
       .lean();
-      
-    // Helper to generate dates for given days within a range using Arabic day names
+
+    // Arabic day name -> JS UTC day index (0=Sunday … 6=Saturday)
     const dayMap = {
       "الأحد": 0,
       "الاثنين": 1,
@@ -45,14 +49,49 @@ router.get('/:id', async (req, res) => {
       "السبت": 6,
     };
 
+    /**
+     * Normalize any date to a UTC-noon Date for the same calendar day
+     * in Asia/Riyadh (UTC+3). This prevents timezone-boundary issues:
+     *   - "2026-06-13T21:00:00Z" is actually 2026-06-14 00:00 in UTC+3
+     *   - We shift +3h then take the UTC date, giving us 2026-06-14
+     */
+    const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000; // UTC+3
+
+    const toNormalizedUTCDate = (date) => {
+      const d = new Date(date);
+      // Shift to Riyadh local time to get the correct calendar day
+      const shifted = new Date(d.getTime() + RIYADH_OFFSET_MS);
+      // Extract year/month/day from the shifted time and return as UTC noon
+      return new Date(Date.UTC(
+        shifted.getUTCFullYear(),
+        shifted.getUTCMonth(),
+        shifted.getUTCDate(),
+        12, 0, 0, 0
+      ));
+    };
+
+    const toDateKey = (date) => {
+      const d = toNormalizedUTCDate(date);
+      return d.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    };
+
+    /**
+     * Generate all scheduled session dates (UTC noon) between start and end,
+     * using only UTC arithmetic so behaviour is identical on any server.
+     */
     const generateSessionDates = (daysArray, startDate, endDate) => {
-      // Convert Arabic day names to numeric day indices
-      const dayIndices = daysArray.map(d => dayMap[d.trim()]).filter(d => d !== undefined);
+      const dayIndices = daysArray
+        .map(d => dayMap[d.trim()])
+        .filter(d => d !== undefined);
       const dates = [];
-      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        if (dayIndices.includes(d.getDay())) {
-          dates.push(new Date(d));
+      // Normalize start/end to UTC noon for safe comparison
+      const cur = toNormalizedUTCDate(startDate);
+      const last = toNormalizedUTCDate(endDate);
+      while (cur <= last) {
+        if (dayIndices.includes(cur.getUTCDay())) {
+          dates.push(new Date(cur)); // snapshot
         }
+        cur.setUTCDate(cur.getUTCDate() + 1);
       }
       return dates;
     };
@@ -60,9 +99,15 @@ router.get('/:id', async (req, res) => {
     // Debug: output group days
     console.log('GROUP DAYS:', student.groupId?.days);
 
-    // Determine the range: from course start date to today
-    const end = new Date();
-    const start = new Date('2026-06-07'); // course start date
+    // Determine the range: course start date → today (Riyadh time)
+    const nowRiyadh = new Date(Date.now() + RIYADH_OFFSET_MS);
+    const end = new Date(Date.UTC(
+      nowRiyadh.getUTCFullYear(),
+      nowRiyadh.getUTCMonth(),
+      nowRiyadh.getUTCDate(),
+      12, 0, 0, 0
+    ));
+    const start = new Date(Date.UTC(2026, 5, 7, 12, 0, 0, 0)); // 2026-06-07 UTC noon
 
     const scheduleDays = student.groupId?.days || [];
     const sessionDates = generateSessionDates(scheduleDays, start, end);
@@ -70,36 +115,50 @@ router.get('/:id', async (req, res) => {
     // Debug: output generated session dates
     console.log('GENERATED DATES:', sessionDates.map(d => d.toISOString().split('T')[0]));
 
-    // Build a map of existing attendance by date string (ISO date only)
+    // Build a map of existing attendance keyed by normalized YYYY-MM-DD
     const attendanceMap = {};
     attendanceRecords.forEach(rec => {
       if (rec.sessionId && rec.sessionId.date) {
-        const iso = new Date(rec.sessionId.date).toISOString().split('T')[0];
-        attendanceMap[iso] = rec;
+        const key = toDateKey(rec.sessionId.date);
+        // Keep first record per day (prevents duplicates from DB)
+        if (!attendanceMap[key]) {
+          attendanceMap[key] = rec;
+        }
       }
     });
 
-    const attendanceHistory = sessionDates.map(dateObj => {
-      const iso = dateObj.toISOString().split('T')[0];
-      const existing = attendanceMap[iso];
+    // Merge schedule with attendance records, deduplicating by date key
+    const seenDates = new Set();
+    const attendanceHistory = [];
+
+    for (const dateObj of sessionDates) {
+      const key = toDateKey(dateObj);
+      if (seenDates.has(key)) continue; // skip duplicate dates
+      seenDates.add(key);
+
+      const existing = attendanceMap[key];
       if (existing) {
-        return {
+        attendanceHistory.push({
           _id: existing._id,
           sessionId: existing.sessionId ? existing.sessionId._id : null,
           status: existing.status,
           isContacted: existing.isContacted,
-          date: existing.sessionId.date,
-        };
+          date: dateObj, // use normalized date for consistency
+        });
+      } else {
+        // No attendance record for this scheduled session
+        attendanceHistory.push({
+          _id: null,
+          sessionId: null,
+          status: 'no-record',
+          isContacted: false,
+          date: dateObj,
+        });
       }
-      // No attendance record for this session
-      return {
-        _id: null,
-        sessionId: null,
-        status: 'no-record',
-        isContacted: false,
-        date: dateObj,
-      };
-    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    // Sort descending (most recent first)
+    attendanceHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // Debug: final attendance history
     console.log('FINAL HISTORY:', attendanceHistory);

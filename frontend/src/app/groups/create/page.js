@@ -13,6 +13,7 @@ export default function CreateGroupPage() {
 
   const [name, setName] = useState("");
   const [timePeriod, setTimePeriod] = useState("Evening");
+  const [time, setTime] = useState("");
   const [classroom, setClassroom] = useState("الأوضة الكبيرة");
   const [teacher, setTeacher] = useState("");
   const [selectedDays, setSelectedDays] = useState(["الأحد", "الثلاثاء", "الخميس"]);
@@ -39,6 +40,7 @@ export default function CreateGroupPage() {
       await api.createGroup({
         name,
         timePeriod,
+        time,
         classroom,
         teacher,
         days: selectedDays,
@@ -136,6 +138,17 @@ export default function CreateGroupPage() {
                   مسائية (2 م - 6 م)
                 </label>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">التوقيت</label>
+              <input
+                type="text"
+                value={time}
+                onChange={e => setTime(e.target.value)}
+                placeholder="مثال: 12 م - 2 م"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
             <div>

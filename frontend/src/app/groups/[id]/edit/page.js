@@ -16,6 +16,7 @@ export default function EditGroupPage({ params }) {
 
   const [name, setName] = useState("");
   const [timePeriod, setTimePeriod] = useState("Evening");
+  const [time, setTime] = useState("");
   const [classroom, setClassroom] = useState("الأوضة الكبيرة");
   const [teacher, setTeacher] = useState("");
   const [selectedDays, setSelectedDays] = useState([]);
@@ -27,6 +28,7 @@ export default function EditGroupPage({ params }) {
         const data = await api.getGroup(id);
         setName(data.name || "");
         setTimePeriod(data.timePeriod || "Evening");
+        setTime(data.time || "");
         setClassroom(data.classroom || "الأوضة الكبيرة");
         setTeacher(data.teacher || "");
         setSelectedDays(data.days || []);
@@ -60,6 +62,7 @@ export default function EditGroupPage({ params }) {
       await api.updateGroup(id, {
         name,
         timePeriod,
+        time,
         classroom,
         teacher,
         days: selectedDays,
@@ -167,6 +170,17 @@ export default function EditGroupPage({ params }) {
                   مسائية (2 م - 6 م)
                 </label>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">التوقيت</label>
+              <input
+                type="text"
+                value={time}
+                onChange={e => setTime(e.target.value)}
+                placeholder="مثال: 12 م - 2 م"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
             <div>

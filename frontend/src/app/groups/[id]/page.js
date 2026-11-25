@@ -103,10 +103,10 @@ export default function GroupPage({ params }) {
             <HiCalendarDays className="text-slate-400 text-base" />
             {group.days.join(" - ")}
           </span>
-          {group.timePeriod && (
+          {(group.time || group.timePeriod) && (
             <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-slate-600">
               <HiClock className="text-slate-400 text-base" />
-              {group.timePeriod === 'Morning' ? 'صباحية (8 ص - 1 م)' : 'مسائية (2 م - 6 م)'}
+              {group.time || (group.timePeriod === 'Morning' ? 'صباحية (8 ص - 1 م)' : 'مسائية (2 م - 6 م)')}
             </span>
           )}
           {group.teacher && (

@@ -72,11 +72,11 @@ export default function AllGroupsPage() {
                     <span>الأيام</span>
                     <span className="font-medium text-slate-700">{group.days.join(" - ")}</span>
                   </div>
-                  {group.timePeriod && (
+                  {(group.time || group.timePeriod) && (
                     <div className="flex justify-between">
                       <span>الوقت</span>
                       <span className="font-medium text-slate-700">
-                        {group.timePeriod === 'Morning' ? 'صباحية (8 ص - 1 م)' : 'مسائية (2 م - 6 م)'}
+                        {group.time || (group.timePeriod === 'Morning' ? 'صباحية (8 ص - 1 م)' : 'مسائية (2 م - 6 م)')}
                       </span>
                     </div>
                   )}

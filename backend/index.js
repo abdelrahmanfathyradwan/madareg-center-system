@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
@@ -23,11 +24,15 @@ app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth') || req.path === '/health') {
     return next();
   }
-  const token = req.headers.authorization;
-  if (token === 'Bearer madarej_admin_token_valid') {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  try {
+    // التحقق من صحة التوكن وتوقيعه وصلاحيته
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
     return next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-  res.status(401).json({ error: 'Unauthorized' });
 });
 
 // Routes

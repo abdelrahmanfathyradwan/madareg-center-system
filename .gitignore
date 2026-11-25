@@ -1,6 +1,17 @@
 node_modules/
+
+# متغيرات البيئة (أسرار) - نستثني النموذج الآمن فقط
 .env
-.env.local
-.env.development
-.env.test
-.env.production
+.env.*
+!.env.example
+
+# ملفات اللوج (قد تسرّب بيانات تشغيل/بيئة)
+*.log
+logs/
+npm-debug.log*
+
+# مخرجات البناء والنشر
+.vercel/
+.netlify/
+.next/
+out/
